@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply font-sans bg-white text-black antialiased transition-colors duration-200;
+}
+
+@layer base {
+  .font-arabic {
+    font-family: 'Noto Sans Arabic', sans-serif;
+  }
+  
+  html[dir="rtl"] {
+    direction: rtl;
+  }
+  
+  html[dir="ltr"] {
+    direction: ltr;
+  }
+  
+  html {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 16.2px;
+    background: #fff;
+    color: #111;
+    zoom: 0.8;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #111;
+  }
+  .heading-xl {
+    font-size: 3rem;
+    font-weight: 900;
+    line-height: 1.1;
+    color: #111;
+  }
+  .heading-lg {
+    font-size: 2.25rem;
+    font-weight: 800;
+    line-height: 1.15;
+    color: #111;
+  }
+  .card {
+    background: #fff;
+    color: #111;
+    border-radius: 1rem;
+    box-shadow: 0 4px 32px 0 rgba(0,0,0,0.08);
+    padding: 2rem;
+  }
+  .shadow-subtle {
+    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+  }
+  .transition {
+    transition: all 0.2s cubic-bezier(.4,0,.2,1);
+  }
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-xs rounded-2xl shadow-glass border border-[#E5E5E5];
+  }
+  .text-highlight {
+    color: #6C63FF;
+  }
+  .focus\:ring-highlight:focus {
+    --tw-ring-color: #6C63FF;
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .bg-pattern {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+    background-size: 20px 20px;
+  }
+  .animate-fade-in {
+    animation: fade-in 1s ease both;
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.8s cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  .animate-fade-in-down {
+    animation: fadeInDown 1s cubic-bezier(.4,0,.2,1) both;
+  }
+  .animate-slide-in-right {
+    animation: slideInRight 0.5s cubic-bezier(.4,0,.2,1) both;
+  }
+  .staggered-fade-in {
+    animation: fadeInUp 0.7s cubic-bezier(.4,0,.2,1) both;
+  }
+  .ripple {
+    position: relative;
+    overflow: hidden;
+  }
+  .ripple:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(0,0,0,0.08);
+    border-radius: 100%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+    pointer-events: none;
+  }
+  .ripple:active:after {
+    width: 200px;
+    height: 200px;
+  }
+  .parallax-hero-bg {
+    background: linear-gradient(120deg, #f8fafc 0%, #e0e7ef 100%);
+    background-size: 200% 200%;
+    animation: gradientMove 8s ease-in-out infinite;
+  }
+  .float-up-down {
+    animation: floatUpDown 2.8s ease-in-out infinite;
+  }
+  @keyframes fade-in {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @keyframes fade-in-up {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes floatUpDown {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes oscillate {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-0.25rem); }
+  }
+  .animate-oscillate {
+    animation: oscillate 1.6s ease-in-out infinite;
+  }
+}
+
+@media (max-width: 1024px) {
+  html {
+    zoom: 1;
+  }
+}

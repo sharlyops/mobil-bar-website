@@ -1,0 +1,1086 @@
+File: src/pages/Contact.tsx
+import React, { useState, useRef, ChangeEvent } from 'react';
+import { motion } from 'framer-motion';
+import { Phone, Mail, MapPin, Calendar, Users, Clock, Send } from 'lucide-react';
+import { sendContactForm } from '../utils/contactApi';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+
+type CustomRadioProps = {
+  name: string;
+  value: string;
+  checked: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  label: string;
+};
+
+type CustomCheckboxProps = {
+  name: string;
+  value: string;
+  checked: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  label: string;
+};
+
+// CustomRadio: filled gold circle when checked
+const CustomRadio: React.FC<CustomRadioProps> = ({ name, value, checked, onChange, label }) => (
+  <label className="flex items-center gap-2 cursor-pointer" style={{ position: 'relative' }}>
+    <input
+      type="radio"
+      name={name}
+      value={value}
+      checked={checked}
+      onChange={onChange}
+      style={{ opacity: 0, position: 'absolute', width: 0, height: 0 }}
+    />
+    <span
+      style={{
+        display: 'inline-block',
+        width: 20,
+        height: 20,
+        borderRadius: '50%',
+        border: '2px solid #e4c16f',
+        background: checked ? '#e4c16f' : 'transparent',
+        marginRight: 8,
+        transition: 'background 0.2s',
+        position: 'relative',
+      }}
+    />
+    {label}
+  </label>
+);
+
+// CustomCheckbox: checkmark centered in gold box
+const CustomCheckbox: React.FC<CustomCheckboxProps> = ({ name, value, checked, onChange, label }) => (
+  <label className="flex items-center gap-2 cursor-pointer" style={{ position: 'relative' }}>
+    <input
+      type="checkbox"
+      name={name}
+      value={value}
+      checked={checked}
+      onChange={onChange}
+      style={{ opacity: 0, position: 'absolute', width: 0, height: 0 }}
+    />
+    <span
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 20,
+        height: 20,
+        borderRadius: 4,
+        border: '2px solid #e4c16f',
+        background: checked ? '#e4c16f' : 'transparent',
+        marginRight: 8,
+        transition: 'background 0.2s',
+        position: 'relative',
+      }}
+    >
+      {checked && (
+        <svg width="14" height="14" viewBox="0 0 14 14">
+          <polyline points="2,8 6,12 12,3" style={{ fill: 'none', stroke: '#000', strokeWidth: 2 }} />
+        </svg>
+      )}
+    </span>
+    {label}
+  </label>
+);
+
+const Contact = () => {
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    eventDate: string;
+    eventType: string;
+    guestCount: string;
+    message: string;
+    streetAddress: string;
+    streetAddress2: string;
+    city: string;
+    state: string;
+    zip: string;
+  }>({
+    name: '',
+    email: '',
+    phone: '',
+    eventDate: '',
+    eventType: '',
+    guestCount: '',
+    message: '',
+    streetAddress: '',
+    streetAddress2: '',
+    city: '',
+    state: '',
+    zip: '',
+  });
+
+  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const formRef = useRef<HTMLDivElement>(null);
+  const thankYouRef = useRef<HTMLDivElement>(null);
+
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: boolean }>({});
+
+  const validateForm = () => {
+    const errors: { [key: string]: boolean } = {};
+    if (!formData.name.trim()) errors.name = true;
+    if (!formData.email.trim()) errors.email = true;
+    if (!formData.eventType.trim()) errors.eventType = true;
+    if (!formData.guestCount.trim()) errors.guestCount = true;
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    if (!validateForm()) {
+      setErrorMsg('Please fill in all required fields.');
+      setTimeout(() => {
+        if (errorRef.current) errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      return;
+    }
+    setStatus('sending');
+    try {
+      const res = await sendContactForm(formData);
+      if (res.success) {
+        setStatus('success');
+        setTimeout(() => {
+          if (thankYouRef.current) {
+            thankYouRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+      } else {
+        setStatus('error');
+        setErrorMsg(res.message || 'Failed to send message.');
+      }
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg('Failed to send message.');
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, type, value } = e.target;
+    if (type === 'checkbox') {
+      const input = e.target as HTMLInputElement;
+      setFormData({ ...formData, [name]: input.checked });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  const contactInfo = [
+    {
+      icon: Phone,
+      title: 'Phone',
+      details: '(603) 769-8868',
+      link: 'tel:+16037698868'
+    },
+    {
+      icon: Mail,
+      title: 'Email',
+      details: 'info@tipsywheels.com',
+      link: 'mailto:info@tipsywheels.com'
+    },
+    {
+      icon: MapPin,
+      title: 'Service Area',
+      details: 'Tipsy Wheels & Surrounding Areas',
+      link: '#'
+    }
+  ];
+
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <motion.div
+      ref={formRef}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen pt-20"
+    >
+      {/* Hero Section */}
+      <section className="pt-20 pb-32 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
+          >
+            <p className="text-sm font-medium text-accent-600 tracking-wider uppercase relative inline-block after:content-[''] after:block after:mx-auto after:mt-2 after:w-10 after:h-1 after:bg-accent-200 after:rounded-full">
+              Contact
+            </p>
+            <h1 className="text-6xl lg:text-8xl font-display font-light text-neutral-900 leading-[0.9] dark:text-neutral-100">
+              Let's Start Planning Your <em className="text-accent-600">Perfect Pour</em>
+            </h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.3 }}
+              className="text-lg text-neutral-600 leading-relaxed max-w-2xl mx-auto dark:text-neutral-300"
+            >
+              Ready to bring Tipsy Wheels to your next event? We'd love to hear about your vision and show you how we can make it happen. Fill out the form below, and we'll get back to you faster than you can say 'last call.'
+            </motion.p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="py-32 px-6 bg-neutral-50 dark:bg-neutral-900">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16">
+            {/* Contact Info */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              className="space-y-12"
+            >
+              <div>
+                <h2 className="text-4xl lg:text-5xl font-display font-light text-neutral-900 mb-6 dark:text-neutral-100">
+                  Get in <em className="text-accent-600">touch</em>
+                </h2>
+                <p className="text-lg text-neutral-600 leading-relaxed dark:text-neutral-300">
+                  We'd love to hear about your event and discuss how we can make it extraordinary.
+                </p>
+              </div>
+              
+              <div className="space-y-8">
+                {contactInfo.map((info, index) => (
+                  <motion.a
+                    key={info.title}
+                    href={info.link}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="flex flex-col items-center text-center group"
+                  >
+                    <div className="w-12 h-12 border border-neutral-300 rounded-full flex items-center justify-center mb-2 group-hover:border-accent-600 transition-colors duration-300 dark:border-neutral-700">
+                      <info.icon className="w-5 h-5 text-neutral-600 group-hover:text-accent-600 transition-colors duration-300 dark:text-neutral-300 dark:group-hover:text-accent-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-neutral-900 mb-1 dark:text-neutral-100">{info.title}</h3>
+                      <p className="text-neutral-600 dark:text-neutral-300">{info.details}</p>
+                    </div>
+                  </motion.a>
+                ))}
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="border border-neutral-200 p-6 bg-white dark:bg-neutral-900 dark:border-neutral-800"
+              >
+                <h3 className="text-xl font-display font-medium text-neutral-900 mb-4 dark:text-neutral-100">
+                  Business Hours
+                </h3>
+                <div className="space-y-3 text-neutral-600 dark:text-neutral-300">
+                  <div className="flex justify-between">
+                    <span>Monday - Friday</span>
+                    <span>9:00 AM - 6:00 PM</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Saturday</span>
+                    <span>10:00 AM - 4:00 PM</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Sunday</span>
+                    <span>By Appointment</span>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Contact Form */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              className="bg-white border border-neutral-200 p-8 dark:bg-neutral-900 dark:border-neutral-800"
+            >
+              {status !== 'success' && (
+                <h2 className="text-3xl font-display font-light text-neutral-900 mb-8 dark:text-neutral-100">
+                  Request a <em className="text-accent-600">quote</em>
+                </h2>
+              )}
+
+              {status === 'success' ? (
+                <div ref={thankYouRef} className="flex flex-col justify-center items-center min-h-[600px] mt-24">
+                  <h2 className="text-4xl font-display font-bold text-accent-600 mb-2">Cheers!</h2>
+                  <p className="text-xl font-display text-neutral-300 dark:text-neutral-300 text-center">Thank you for your message! We'll be in touch soon to start planning your event.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-neutral-700 font-medium mb-3 dark:text-neutral-200">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        className={`w-full px-4 py-4 border ${validationErrors.name ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                        placeholder="Your name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-neutral-700 font-medium mb-3 dark:text-neutral-200">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        className={`w-full px-4 py-4 border ${validationErrors.email ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                        placeholder="your.email@example.com"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-neutral-700 font-medium mb-3 dark:text-neutral-200">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-4 border ${validationErrors.phone ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                        placeholder="(615) 123-4567"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-neutral-700 font-medium mb-3 dark:text-neutral-200">
+                        Event Date
+                      </label>
+                      <DatePicker
+                        selected={formData.eventDate ? new Date(formData.eventDate) : null}
+                        onChange={date => setFormData({ ...formData, eventDate: date ? date.toISOString().slice(0, 10) : '' })}
+                        className={`w-full px-4 py-4 border ${validationErrors.eventDate ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                        dateFormat="MM/DD/YYYY"
+                        placeholderText="MM/DD/YYYY"
+                        calendarClassName="dark:bg-neutral-900 dark:text-neutral-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-neutral-700 font-medium mb-3 dark:text-neutral-200">
+                        Event Type
+                      </label>
+                      <select
+                        name="eventType"
+                        value={formData.eventType}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-4 border ${validationErrors.eventType ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                      >
+                        <option value="">Please Select</option>
+                        <option value="wedding">Wedding</option>
+                        <option value="birthday">Birthday party</option>
+                        <option value="baby-shower">Baby Shower / Gender Reveal</option>
+                        <option value="graduation">Graduation</option>
+                        <option value="engagement">Engagement Party</option>
+                        <option value="corporate">Corporate Event</option>
+                        <option value="holiday">Holiday Party</option>
+                        <option value="bachelor">Bachelor / Bachelorette Party</option>
+                        <option value="anniversary">Anniversary</option>
+                        <option value="family-reunion">Family Reunion</option>
+                        <option value="pop-up">Pop-Up or Vendor Event</option>
+                        <option value="other">Other (please specify)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-neutral-700 font-medium mb-3 dark:text-neutral-200">
+                        Expected Guests
+                      </label>
+                      <input
+                        type="number"
+                        name="guestCount"
+                        value={formData.guestCount}
+                        onChange={handleChange}
+                        min="1"
+                        max="1000"
+                        className={`w-full px-4 py-4 border ${validationErrors.guestCount ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                        placeholder="Approximate number of guests"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <h3 className="text-xl font-display font-medium text-neutral-900 mb-4 dark:text-neutral-100">Event Address</h3>
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        name="streetAddress"
+                        value={formData.streetAddress}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-4 border ${validationErrors.streetAddress ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                        placeholder="Street Address"
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        name="streetAddress2"
+                        value={formData.streetAddress2}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-4 border ${validationErrors.streetAddress2 ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                        placeholder="Street Address Line 2"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                      <div>
+                        <input
+                          type="text"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleChange}
+                          className={`w-full px-4 py-4 border ${validationErrors.city ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                          placeholder="City"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          name="state"
+                          value={formData.state}
+                          onChange={handleChange}
+                          className={`w-full px-4 py-4 border ${validationErrors.state ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                          placeholder="State / Province"
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        name="zip"
+                        value={formData.zip}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-4 border ${validationErrors.zip ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400`}
+                        placeholder="Postal / Zip Code"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-neutral-700 font-medium mb-3 dark:text-neutral-200">
+                      Tell us about your event
+                    </label>
+                    <textarea
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
+                      rows={5}
+                      className={`w-full px-4 py-4 border ${validationErrors.message ? 'border-red-500' : 'border-neutral-300'} text-neutral-900 placeholder-neutral-500 focus:border-accent-600 focus:ring-1 focus:ring-accent-600 transition-colors dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400 resize-none`}
+                      placeholder="Tell us about your event vision, venue details, and any specific requirements..."
+                    />
+                  </div>
+
+                  <div className="flex justify-center mt-8">
+                    <motion.button
+                      type="submit"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="bg-[#000000] text-[#e4c16f] shadow-lg font-display px-12 py-4 rounded flex items-center justify-center hover:bg-accent-600 hover:text-neutral-900 transition-colors duration-300 mx-auto"
+                      disabled={status === 'sending'}
+                    >
+                      <Send className="w-5 h-5 mr-2" />
+                      <span>Submit</span>
+                    </motion.button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us */}
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-20"
+          >
+            <h2 className="text-4xl lg:text-5xl font-display font-light text-neutral-900 mb-4 dark:text-neutral-100">
+              Why choose <em className="text-accent-600">us</em>
+            </h2>
+            <p className="text-lg text-neutral-600 max-w-2xl mx-auto dark:text-neutral-300">
+              Experience the difference of premium mobile bar service
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { icon: Calendar, title: 'Quick Response', desc: 'We respond to all inquiries within 24 hours' },
+              { icon: Users, title: 'Personal Service', desc: 'Dedicated event coordinator for your special day' },
+              { icon: Clock, title: 'Flexible Scheduling', desc: 'Available evenings and weekends for consultations' }
+            ].map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="text-center group"
+              >
+                <div className="w-16 h-16 border border-neutral-300 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:border-accent-600 transition-colors duration-300">
+                  <item.icon className="w-8 h-8 text-neutral-600 group-hover:text-accent-600 transition-colors duration-300 dark:text-neutral-100" />
+                </div>
+                <h3 className="text-xl font-display font-medium text-neutral-900 mb-3 dark:text-neutral-100">
+                  {item.title}
+                </h3>
+                <p className="text-neutral-600 leading-relaxed dark:text-neutral-300">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </motion.div>
+  );
+};
+
+export default Contact;
+
+File: api/contact.js
+import nodemailer from 'nodemailer';
+
+export default async function handler(req, res) {
+  console.log('--- New Contact Form Submission ---');
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+  }
+
+  const { name, email, phone, eventDate, eventType, guestCount, message, streetAddress, streetAddress2, city, state, zip } = req.body;
+
+  // Set up transporter
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+
+  const htmlBody = `
+    <div style="background:#171717;padding:32px 0;font-family:'Inter',Arial,sans-serif;color:#f3f4f6;">
+      <div style="max-width:600px;margin:0 auto;background:#232323;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.10);padding:40px 32px;">
+        <h2 style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:600;color:#e4c16f;margin-bottom:8px;margin-top:0;">New Contact Form Submission</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:1rem;margin-top:24px;">
+          <tr><td style="font-weight:600;padding:8px 0;width:180px;color:#fff;">Name:</td><td style="color:#f3f4f6;">${name}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">Email:</td><td><a href="mailto:${email}" style="color:#e4c16f;text-decoration:none;">${email}</a></td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">Phone:</td><td style="color:#f3f4f6;">${phone || '-'}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">Event Date:</td><td style="color:#f3f4f6;">${eventDate || '-'}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">Event Type:</td><td style="color:#f3f4f6;">${eventType || '-'}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">Guest Count:</td><td style="color:#f3f4f6;">${guestCount || '-'}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">Street Address:</td><td style="color:#f3f4f6;">${streetAddress || '-'}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">Street Address 2:</td><td style="color:#f3f4f6;">${streetAddress2 || '-'}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">City:</td><td style="color:#f3f4f6;">${city || '-'}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">State/Province:</td><td style="color:#f3f4f6;">${state || '-'}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;color:#fff;">Postal/Zip Code:</td><td style="color:#f3f4f6;">${zip || '-'}</td></tr>
+          <tr><td style="font-weight:600;padding:8px 0;vertical-align:top;color:#fff;">Message:</td><td style="color:#f3f4f6;">${message ? message.replace(/\\n/g,'<br>') : '-'}</td></tr>
+        </table>
+        <div style="margin-top:32px;font-size:0.95rem;color:#a3a3a3;">
+          <em>Sent from the Tipsy Wheels website contact form.</em>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const mailOptions = {
+    from: `"Tipsy Wheels Contact" <${process.env.EMAIL_USER}>`,
+    to: process.env.EMAIL_TO,
+    subject: 'New Contact Form Submission',
+    text: `
+      Name: ${name}
+      Email: ${email}
+      Phone: ${phone}
+      Event Date: ${eventDate}
+      Event Type: ${eventType}
+      Guest Count: ${guestCount}
+      Street Address: ${streetAddress}
+      Street Address 2: ${streetAddress2}
+      City: ${city}
+      State/Province: ${state}
+      Postal/Zip Code: ${zip}
+      Message: ${message}
+    `,
+    html: htmlBody
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ success: true, message: 'Message sent!' });
+  } catch (error) {
+    console.error('Email send error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send email', error: error.message });
+  }
+} 
+
+File: src/utils/contactApi.ts
+// Utility to send contact form data to the backend
+export async function sendContactForm(data: any) {
+  const response = await fetch('/api/contact', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  return response.json();
+} 
+
+File: src/tests/api/contact.test.js
+import { jest } from '@jest/globals';
+
+// Mock nodemailer
+jest.mock('nodemailer', () => ({
+  createTransporter: jest.fn(() => ({
+    sendMail: jest.fn()
+  })),
+  default: {
+    createTransporter: jest.fn(() => ({
+      sendMail: jest.fn()
+    }))
+  }
+}));
+
+import nodemailer from 'nodemailer';
+
+describe('Contact API Unit Tests', () => {
+  let mockTransporter;
+  let mockSendMail;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSendMail = jest.fn();
+    mockTransporter = {
+      sendMail: mockSendMail
+    };
+    nodemailer.createTransporter = jest.fn(() => mockTransporter);
+  });
+
+  const createMockRequest = (method = 'POST', body = {}) => ({
+    method,
+    body,
+    headers: {}
+  });
+
+  const createMockResponse = () => {
+    const res = {};
+    res.status = jest.fn(() => res);
+    res.json = jest.fn(() => res);
+    return res;
+  };
+
+  describe('HTTP Method validation', () => {
+    test('should return 405 for non-POST requests', async () => {
+      // Mock environment variables
+      process.env.EMAIL_USER = 'test@example.com';
+      process.env.EMAIL_PASS = 'password123';
+      process.env.EMAIL_TO = 'admin@example.com';
+
+      // Import the handler after setting up mocks
+      const { default: handler } = await import('../../api/contact.js');
+
+      const req = createMockRequest('GET');
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(405);
+      expect(res.json).toHaveBeenCalledWith({ 
+        success: false, 
+        message: 'Method Not Allowed' 
+      });
+    });
+  });
+
+  describe('Email sending', () => {
+    test('should send email with valid form data', async () => {
+      // Mock environment variables
+      process.env.EMAIL_USER = 'test@example.com';
+      process.env.EMAIL_PASS = 'password123';
+      process.env.EMAIL_TO = 'admin@example.com';
+
+      mockSendMail.mockResolvedValue({ messageId: 'test123' });
+
+      const formData = {
+        name: 'John Doe',
+        email: 'john@example.com',
+        phone: '555-1234',
+        eventDate: '2024-12-25',
+        eventType: 'Wedding',
+        guestCount: '100',
+        message: 'Test message',
+        streetAddress: '123 Main St',
+        city: 'Boston',
+        state: 'MA',
+        zip: '02101',
+        package: 'Premium',
+        addOns: ['Ice Bar', 'Premium Liquor'],
+        signatureDrinks: 'Mojito',
+        termsAgreed: true
+      };
+
+      // Import the handler after setting up mocks
+      const { default: handler } = await import('../../api/contact.js');
+
+      const req = createMockRequest('POST', formData);
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(nodemailer.createTransporter).toHaveBeenCalledWith({
+        service: 'gmail',
+        auth: {
+          user: 'test@example.com',
+          pass: 'password123'
+        }
+      });
+
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: '"Tipsy Wheels Contact" <test@example.com>',
+          to: 'admin@example.com',
+          subject: 'New Contact Form Submission',
+          text: expect.stringContaining('John Doe'),
+          html: expect.stringContaining('John Doe')
+        })
+      );
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ 
+        success: true, 
+        message: 'Message sent!' 
+      });
+    });
+
+    test('should handle missing optional fields gracefully', async () => {
+      process.env.EMAIL_USER = 'test@example.com';
+      process.env.EMAIL_PASS = 'password123';
+      process.env.EMAIL_TO = 'admin@example.com';
+
+      mockSendMail.mockResolvedValue({ messageId: 'test123' });
+
+      const minimalFormData = {
+        name: 'Jane Doe',
+        email: 'jane@example.com'
+      };
+
+      const { default: handler } = await import('../../api/contact.js');
+
+      const req = createMockRequest('POST', minimalFormData);
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('Jane Doe'),
+          html: expect.stringContaining('Jane Doe')
+        })
+      );
+
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    test('should handle email sending errors', async () => {
+      process.env.EMAIL_USER = 'test@example.com';
+      process.env.EMAIL_PASS = 'password123';
+      process.env.EMAIL_TO = 'admin@example.com';
+
+      const emailError = new Error('SMTP connection failed');
+      mockSendMail.mockRejectedValue(emailError);
+
+      const formData = {
+        name: 'John Doe',
+        email: 'john@example.com'
+      };
+
+      const { default: handler } = await import('../../api/contact.js');
+
+      const req = createMockRequest('POST', formData);
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ 
+        success: false, 
+        message: 'Failed to send email',
+        error: 'SMTP connection failed'
+      });
+    });
+  });
+
+  describe('Email content validation', () => {
+    test('should include all form fields in email content', async () => {
+      process.env.EMAIL_USER = 'test@example.com';
+      process.env.EMAIL_PASS = 'password123';
+      process.env.EMAIL_TO = 'admin@example.com';
+
+      mockSendMail.mockResolvedValue({ messageId: 'test123' });
+
+      const completeFormData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        phone: '555-0123',
+        eventDate: '2024-06-15',
+        eventType: 'Corporate Event',
+        guestCount: '50',
+        message: 'Looking forward to working with you!',
+        streetAddress: '456 Business Ave',
+        streetAddress2: 'Suite 100',
+        city: 'Manchester',
+        state: 'NH',
+        zip: '03101',
+        package: 'Standard',
+        addOns: ['Premium Bar', 'Cocktail Hour'],
+        signatureDrinks: 'Old Fashioned, Manhattan',
+        termsAgreed: true
+      };
+
+      const { default: handler } = await import('../../api/contact.js');
+
+      const req = createMockRequest('POST', completeFormData);
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: expect.stringMatching(/Test User/),
+          html: expect.stringMatching(/test@example\.com/),
+          html: expect.stringMatching(/555-0123/),
+          html: expect.stringMatching(/Corporate Event/),
+          html: expect.stringMatching(/Premium Bar, Cocktail Hour/),
+          html: expect.stringMatching(/Old Fashioned, Manhattan/),
+          html: expect.stringMatching(/Yes/) // termsAgreed
+        })
+      );
+    });
+
+    test('should handle arrays in addOns field', async () => {
+      process.env.EMAIL_USER = 'test@example.com';
+      process.env.EMAIL_PASS = 'password123';
+      process.env.EMAIL_TO = 'admin@example.com';
+
+      mockSendMail.mockResolvedValue({ messageId: 'test123' });
+
+      const formDataWithAddOns = {
+        name: 'Test User',
+        email: 'test@example.com',
+        addOns: ['Premium Liquor', 'Ice Bar', 'Extra Staff']
+      };
+
+      const { default: handler } = await import('../../api/contact.js');
+
+      const req = createMockRequest('POST', formDataWithAddOns);
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: expect.stringMatching(/Premium Liquor, Ice Bar, Extra Staff/)
+        })
+      );
+    });
+
+    test('should show "None" for empty addOns', async () => {
+      process.env.EMAIL_USER = 'test@example.com';
+      process.env.EMAIL_PASS = 'password123';
+      process.env.EMAIL_TO = 'admin@example.com';
+
+      mockSendMail.mockResolvedValue({ messageId: 'test123' });
+
+      const formDataNoAddOns = {
+        name: 'Test User',
+        email: 'test@example.com',
+        addOns: []
+      };
+
+      const { default: handler } = await import('../../api/contact.js');
+
+      const req = createMockRequest('POST', formDataNoAddOns);
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: expect.stringMatching(/None/)
+        })
+      );
+    });
+  });
+});
+
+File: src/tests/utils/contactApi.test.js
+import { jest } from '@jest/globals';
+
+// Mock fetch globally
+global.fetch = jest.fn();
+
+import { sendContactForm } from '../../utils/contactApi';
+
+describe('Contact API Utility Unit Tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test('should send contact form data successfully', async () => {
+    const mockResponseData = { success: true, message: 'Message sent!' };
+    
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(mockResponseData)
+    });
+
+    const formData = {
+      name: 'John Doe',
+      email: 'john@example.com',
+      message: 'Test message'
+    };
+
+    const result = await sendContactForm(formData);
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+
+    expect(result).toEqual(mockResponseData);
+  });
+
+  test('should handle network errors', async () => {
+    global.fetch.mockRejectedValue(new Error('Network error'));
+
+    const formData = {
+      name: 'John Doe',
+      email: 'john@example.com'
+    };
+
+    await expect(sendContactForm(formData)).rejects.toThrow('Network error');
+  });
+
+  test('should handle HTTP error responses', async () => {
+    const errorResponse = { error: 'Server error' };
+    
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: jest.fn().mockResolvedValue(errorResponse)
+    });
+
+    const formData = {
+      name: 'John Doe',
+      email: 'john@example.com'
+    };
+
+    const result = await sendContactForm(formData);
+    expect(result).toEqual(errorResponse);
+  });
+
+  test('should send complete form data with all fields', async () => {
+    const mockResponseData = { success: true };
+    
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(mockResponseData)
+    });
+
+    const completeFormData = {
+      name: 'Jane Smith',
+      email: 'jane@example.com',
+      phone: '555-0123',
+      eventDate: '2024-08-15',
+      eventType: 'Wedding',
+      guestCount: '150',
+      message: 'Planning a summer wedding',
+      streetAddress: '123 Wedding Lane',
+      streetAddress2: 'Suite 200',
+      city: 'Portland',
+      state: 'ME',
+      zip: '04101',
+      package: 'Premium',
+      addOns: ['Premium Bar', 'Ice Sculpture'],
+      signatureDrinks: 'Cosmopolitan, Old Fashioned',
+      termsAgreed: true
+    };
+
+    await sendContactForm(completeFormData);
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(completeFormData)
+    });
+  });
+
+  test('should handle JSON parsing errors', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockRejectedValue(new Error('Invalid JSON'))
+    });
+
+    const formData = {
+      name: 'Test User',
+      email: 'test@example.com'
+    };
+
+    await expect(sendContactForm(formData)).rejects.toThrow('Invalid JSON');
+  });
+
+  test('should send empty object gracefully', async () => {
+    const mockResponseData = { success: false, message: 'Missing required fields' };
+    
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: jest.fn().mockResolvedValue(mockResponseData)
+    });
+
+    const result = await sendContactForm({});
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({})
+    });
+
+    expect(result).toEqual(mockResponseData);
+  });
+});
