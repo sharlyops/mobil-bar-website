@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(express..json());
+app.use(express.json());
 app.use(cors()); // Adjust CORS as needed for production
 
 // POST /api/contact endpoint
@@ -22,7 +22,7 @@ app.post('/api/contact', [
   body('company').optional().trim().escape(),
   body('message').trim().notEmpty().withMessage('Message is required'),
 ], async (req, res) => {
-  // Validate input
+  // Validate input production
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ success: false, message: 'Validation failed', error: errors.array() });
